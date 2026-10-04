@@ -36,7 +36,7 @@ The thresholds are configurable (`ROUTE_LOW`, `ROUTE_HIGH`), as are `CLOUD_TIMEO
 
 ## Method and limitations
 
-- **Hardware:** Apple Silicon MacBook Air, everything on one machine over localhost. Latency is measured by the client and includes the HTTP round trip to the router. [ADD RAM/CHIP]
+- **Hardware:** Apple Silicon MacBook Air, everything on one machine over localhost. Latency is measured by the client and includes the HTTP round trip to the router. Apple M5 chip.
 - **Simulated cloud:** the cloud endpoint runs the same model plus a fixed 500 ms delay. The speedup therefore reflects that setting, not a real network. Accuracy is identical by construction, so this benchmark does not measure the accuracy benefit of a larger cloud model.
 - **Outage test:** the outage flag fails instantly. A real network blackhole would make uncertain requests wait for the timeout before falling back.
 - **Data:** the benchmark sample has 1,998 rows from the held-out test split of the [ULB credit card fraud dataset](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud), including all 98 test fraud cases (about 5% fraud, versus 0.17% in the full data). The data file is not committed.
@@ -60,7 +60,7 @@ The thresholds are configurable (`ROUTE_LOW`, `ROUTE_HIGH`), as are `CLOUD_TIMEO
 Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/edge-cloud-inference-router
+git clone https://github.com/mrunaliniamarnath25-sudo/edge-cloud-inference-router
 cd edge-cloud-inference-router
 uv sync
 uv run pytest -q
