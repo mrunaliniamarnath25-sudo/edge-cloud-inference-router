@@ -1,0 +1,30 @@
+[project]
+name = "edge-cloud-inference-router"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.142.2",
+    "httpx>=0.28.1",
+    "kagglehub>=1.0.2",
+    "numpy>=2.5.3",
+    "onnxruntime>=1.30.0",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[project.scripts]
+edge-cloud-inference-router = "edge_cloud_inference_router:main"
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.10",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
