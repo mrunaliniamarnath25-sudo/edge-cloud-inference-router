@@ -8,8 +8,10 @@ dependencies = [
     "fastapi>=0.142.2",
     "httpx>=0.28.1",
     "kagglehub>=1.0.2",
+    "matplotlib>=3.11.2",
     "numpy>=2.5.3",
     "onnxruntime>=1.30.0",
+    "pandas>=3.0.6",
     "uvicorn[standard]>=0.54.0",
 ]
 
