@@ -1,27 +1,36 @@
+import os
 import time
-from pathlib import Path
+from typing import Literal
 
-import numpy as np
-import onnxruntime as ort
-from fastapi import FastAPI
-from pydantic import BaseModel, Field
+import httpx
+from fastapi import FastAPI, HTTPException
 
-MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / "fraud_model.onnx"
-N_FEATURES = 30
+from app.model import score
+from app.schemas import Prediction, Transaction
+
+CLOUD_URL = os.getenv("CLOUD_URL", "http://127.0.0.1:8001/cloud/predict")
+CLOUD_TIMEOUT_S = float(os.getenv("CLOUD_TIMEOUT_S", "1.0"))
+LOW = float(os.getenv("ROUTE_LOW", "0.1"))
+HIGH = float(os.getenv("ROUTE_HIGH", "0.9"))
 
 app = FastAPI(title="Edge-Cloud Inference Router")
-session = ort.InferenceSession(str(MODEL_PATH))
-input_name = session.get_inputs()[0].name
+client = httpx.AsyncClient(timeout=CLOUD_TIMEOUT_S)
+state = {"cloud_down": False}
 
 
-class Transaction(BaseModel):
-    features: list[float] = Field(min_length=N_FEATURES, max_length=N_FEATURES)
+def ms(start: float) -> float:
+    return (time.perf_counter() - start) * 1000
 
 
-class Prediction(BaseModel):
-    fraud_probability: float
-    route: str
-    latency_ms: float
+async def call_cloud(tx: Transaction) -> tuple[Prediction, int]:
+    if state["cloud_down"]:
+        raise httpx.ConnectError("simulated outage")
+    payload = tx.model_dump_json().encode()
+    r = await client.post(
+        CLOUD_URL, content=payload, headers={"Content-Type": "application/json"}
+    )
+    r.raise_for_status()
+    return Prediction(**r.json()), len(payload)
 
 
 @app.get("/health")
@@ -29,14 +38,52 @@ def health():
     return {"status": "ok"}
 
 
+@app.post("/admin/outage")
+def set_outage(down: bool):
+    state["cloud_down"] = down
+    return state
+
+
 @app.post("/edge/predict", response_model=Prediction)
 def edge_predict(tx: Transaction):
     start = time.perf_counter()
-    x = np.asarray([tx.features], dtype=np.float32)
-    probs = session.run(None, {input_name: x})[1]
-    p = float(probs[0][1])
     return Prediction(
-        fraud_probability=p,
-        route="edge",
-        latency_ms=(time.perf_counter() - start) * 1000,
+        fraud_probability=score(tx.features), route="edge", latency_ms=ms(start)
+    )
+
+
+@app.post("/predict", response_model=Prediction)
+async def predict(
+    tx: Transaction,
+    mode: Literal["hybrid", "cloud_only", "edge_only"] = "hybrid",
+):
+    start = time.perf_counter()
+
+    if mode == "cloud_only":
+        try:
+            result, sent = await call_cloud(tx)
+        except httpx.HTTPError:
+            raise HTTPException(status_code=503, detail="cloud unavailable")
+        return Prediction(
+            fraud_probability=result.fraud_probability,
+            route="cloud",
+            latency_ms=ms(start),
+            bytes_to_cloud=sent,
+        )
+
+    p = score(tx.features)
+    if mode == "edge_only" or p <= LOW or p >= HIGH:
+        return Prediction(fraud_probability=p, route="edge", latency_ms=ms(start))
+
+    try:
+        result, sent = await call_cloud(tx)
+    except httpx.HTTPError:
+        return Prediction(
+            fraud_probability=p, route="edge", latency_ms=ms(start), fell_back=True
+        )
+    return Prediction(
+        fraud_probability=result.fraud_probability,
+        route="cloud",
+        latency_ms=ms(start),
+        bytes_to_cloud=sent,
     )
