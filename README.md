@@ -66,7 +66,7 @@ uv sync
 uv run pytest -q
 ```
 
-To reproduce the benchmark, export `benchmark_sample.csv` with the cell in the training notebook ([Kaggle notebook link]), save it as `data/benchmark_sample.csv`, then:
+To reproduce the benchmark, export `benchmark_sample.csv` with the cell in the training notebook ([Kaggle notebook](https://www.kaggle.com/code/mrunalini4196/edge-cloud-router-training)), save it as `data/benchmark_sample.csv`, then:
 
 ```bash
 uv run python bench/run_benchmark.py --n 300
