@@ -11,3 +11,6 @@ bench:
 
 chart:
 	uv run python bench/make_chart.py
+
+accuracy:
+	uv run python -m bench.accuracy

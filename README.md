@@ -36,10 +36,26 @@ flowchart LR
 
 The thresholds are configurable (`ROUTE_LOW`, `ROUTE_HIGH`), as are `CLOUD_TIMEOUT_S` and `CLOUD_DELAY_MS`.
 
+## Accuracy vs. cloud traffic
+
+The edge model has 100 trees (depth 4) and the cloud model has 600 trees (depth 8). Scoring all 1,998 benchmark rows with both models and applying the router's rule (`python -m bench.accuracy`):
+
+| Setup | Sent to cloud | Fraud caught (of 98) | Missed |
+|---|---|---|---|
+| Edge only | 0% | 81 | 17 |
+| Cloud only | 100% | 82 | 16 |
+| Hybrid, band 0.1 to 0.9 (default) | 0.5% | 82 | 16 |
+| Hybrid, band 0.2 to 0.8 | 0.3% | 81 | 17 |
+
+- The larger model catches one more fraud case. That is within noise on 98 cases, so this shows routing did not cost accuracy here, not that the cloud model is better.
+- 16 fraud cases are missed by both models, so routing cannot recover them.
+- Precision is not reported: the sample has all 98 fraud cases but only 1,900 of 56,864 normal rows, so false positives are undercounted.
+- The sample is about 5% fraud versus 0.17% in the full data, so the share sent to the cloud likely overstates real traffic.
+
 ## Method and limitations
 
 - **Hardware:** Apple Silicon MacBook Air, everything on one machine over localhost. Latency is measured by the client and includes the HTTP round trip to the router. Apple M5 chip.
-- **Simulated cloud:** the cloud endpoint runs the same model plus a fixed 500 ms delay. The speedup therefore reflects that setting, not a real network. Accuracy is identical by construction, so this benchmark does not measure the accuracy benefit of a larger cloud model.
+- **Simulated cloud:** the cloud endpoint runs a larger XGBoost model (600 trees, depth 8) plus a fixed 500 ms delay. The delay is simulated, so the latency speedup reflects that setting, not a real network. The larger model's own inference time is about 0.04 ms.
 - **Outage test:** the outage flag fails instantly. A real network blackhole would make uncertain requests wait for the timeout before falling back.
 - **Data:** the benchmark sample has 1,998 rows from the held-out test split of the [ULB credit card fraud dataset](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud), including all 98 test fraud cases (about 5% fraud, versus 0.17% in the full data). The data file is not committed.
 - **Model:** XGBoost (100 trees, depth 4), exported to ONNX. On the test split, fraud precision was 0.818 and recall 0.827.
