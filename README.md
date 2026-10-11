@@ -52,7 +52,7 @@ The thresholds are configurable (`ROUTE_LOW`, `ROUTE_HIGH`), as are `CLOUD_TIMEO
 | Edge inference (ONNX, FastAPI) | Done |
 | Router with timeout fallback | Done |
 | Benchmark harness and charts | Done |
-| Model versioning on Kaggle | Basic: model file is committed; Kaggle download planned |
+| Model versioning on Kaggle | Done: model downloads from Kaggle via `MODEL_HANDLE`; a committed copy is the fallback |
 | Drift detection and retraining loop | Planned |
 | Multiple edge nodes and agent layer | Planned |
 | DePIN adapter | Planned |
@@ -66,6 +66,12 @@ git clone https://github.com/mrunaliniamarnath25-sudo/edge-cloud-inference-route
 cd edge-cloud-inference-router
 uv sync
 uv run pytest -q
+```
+
+By default the edge model loads from `models/fraud_model.onnx`. To download it from Kaggle instead, set `MODEL_HANDLE` (the benchmark inherits it too):
+
+```bash
+MODEL_HANDLE=mrunalini4196/fraud-onnx-edge/other/default/1 uv run uvicorn app.main:app
 ```
 
 To reproduce the benchmark, export `benchmark_sample.csv` with the cell in the training notebook ([Kaggle notebook](https://www.kaggle.com/code/mrunalini4196/edge-cloud-router-training)), save it as `data/benchmark_sample.csv`, then:
