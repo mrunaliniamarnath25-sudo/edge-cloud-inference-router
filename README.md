@@ -8,15 +8,15 @@ A latency-first hybrid inference router. A small ONNX fraud model runs at the ed
 
 ## Results
 
-300 requests per scenario, same transactions in every scenario, cloud simulated with a 500 ms delay.
+500 requests per scenario, same transactions in every scenario, cloud simulated with a 500 ms delay.
 
 | Scenario | p50 (ms) | p95 (ms) | p99 (ms) | Handled at edge | Data sent to cloud | Answered during outage |
 |---|---|---|---|---|---|---|
-| Cloud only | 507.95 | 510.04 | 511.06 | 0% | 99.0 KB | 0% |
-| Hybrid router | 0.48 | 0.98 | 21.37 | 99% | 1.0 KB | 100% |
-| Edge only | 0.46 | 0.66 | 0.80 | 100% | 0 KB | 100% |
+| Cloud only | 507.11 | 509.13 | 511.55 | 0% | 165.0 KB | 0% |
+| Hybrid router | 0.51 | 1.16 | 13.81 | 99.4% | 1.0 KB | 100% |
+| Edge only | 0.48 | 0.85 | 1.41 | 100% | 0 KB | 100% |
 
-The hybrid p99 (21.37 ms) is higher than its p95 because about 1% of requests score in the uncertain band and are sent to the cloud, so those few requests set the 99th percentile.
+Hybrid sent 3 of 500 requests (0.6%) to the cloud, each taking about 500 ms.
 
 ## How it works
 
