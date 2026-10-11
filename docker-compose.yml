@@ -1,0 +1,15 @@
+services:
+  cloud:
+    build: .
+    command: uvicorn app.cloud:app --host 0.0.0.0 --port 8001
+    environment:
+      CLOUD_DELAY_MS: "500"
+  router:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    environment:
+      CLOUD_URL: http://cloud:8001/cloud/predict
+    ports:
+      - "8000:8000"
+    depends_on:
+      - cloud
