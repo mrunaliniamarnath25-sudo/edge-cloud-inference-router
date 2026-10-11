@@ -16,6 +16,7 @@ HIGH = float(os.getenv("ROUTE_HIGH", "0.9"))
 app = FastAPI(title="Edge-Cloud Inference Router")
 client = httpx.AsyncClient(timeout=CLOUD_TIMEOUT_S)
 state = {"cloud_down": False}
+score([0.0] * 30)  # load and warm the edge model at startup
 
 
 def ms(start: float) -> float:
