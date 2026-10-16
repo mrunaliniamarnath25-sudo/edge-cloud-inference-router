@@ -96,6 +96,14 @@ With Docker (starts the router on port 8000 and the simulated cloud):
 docker compose up --build
 ```
 
+Quick start without the data file (the benchmark generates random rows when `data/benchmark_sample.csv` is missing):
+
+```bash
+uv run python bench/run_benchmark.py --synthetic --n 50
+```
+
+Latency numbers from a synthetic run are valid. The routing mix and accuracy are not, because random rows all look confidently non-fraud, so the hybrid router never sends them to the cloud. Synthetic runs write to `results/benchmark_synthetic.csv` and never overwrite the real results.
+
 To reproduce the benchmark, export `benchmark_sample.csv` with the cell in the training notebook ([Kaggle notebook](https://www.kaggle.com/code/mrunalini4196/edge-cloud-router-training)), save it as `data/benchmark_sample.csv`, then:
 
 ```bash
