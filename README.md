@@ -16,7 +16,7 @@ A latency-first hybrid inference router. A small ONNX fraud model runs at the ed
 | Hybrid router | 0.51 | 1.16 | 13.81 | 99.4% | 1.0 KB | 100% |
 | Edge only | 0.48 | 0.85 | 1.41 | 100% | 0 KB | 100% |
 
-Hybrid sent 3 of 500 requests (0.6%) to the cloud, each taking about 500 ms.
+Hybrid sent 3 of 500 requests (0.6%) to the cloud, each taking about 506 to 508 ms, which puts them above p99. The 13.81 ms p99 comes from edge requests that ran right after those cloud calls (about 13 to 18 ms each). The first two hybrid requests, which followed the cloud-only run, were also slower (about 4.8 ms). The slowdown after cloud activity is observed, but its cause is not established; contention on the single benchmark machine is a likely suspect.
 
 ## How it works
 
