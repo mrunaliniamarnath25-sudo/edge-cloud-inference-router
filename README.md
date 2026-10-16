@@ -90,6 +90,8 @@ By default the edge model loads from `models/fraud_model.onnx`. To download it f
 MODEL_HANDLE=mrunalini4196/fraud-onnx-edge/other/default/1 uv run uvicorn app.main:app
 ```
 
+The simulated cloud has a matching setting, `CLOUD_MODEL_HANDLE=mrunalini4196/fraud-onnx-cloud/other/default/1`, which defaults to `models/fraud_model_cloud.onnx`.
+
 With Docker (starts the router on port 8000 and the simulated cloud):
 
 ```bash
