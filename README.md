@@ -2,6 +2,8 @@
 
 ![CI](https://github.com/mrunaliniamarnath25-sudo/edge-cloud-inference-router/actions/workflows/ci.yml/badge.svg)
 
+**Demo video:** [Watch on YouTube](https://youtu.be/Bcbm5k1hI8U)
+
 A latency-first hybrid inference router. A small ONNX fraud model runs at the edge and answers confident requests in under a millisecond. Only uncertain requests are sent to a (simulated) cloud endpoint, and the system keeps answering when the cloud is down.
 
 ![Benchmark results](results/latency_chart.png)
