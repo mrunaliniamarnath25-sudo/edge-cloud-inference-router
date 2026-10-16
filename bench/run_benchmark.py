@@ -26,6 +26,11 @@ def load_rows(path, n):
     return rows[:n]
 
 
+def synthetic_rows(n):
+    rng = np.random.default_rng(0)
+    return [(rng.normal(size=30).tolist(), 0) for _ in range(n)]
+
+
 def wait_ready(client, probe):
     deadline = time.time() + 30
     while time.time() < deadline:
@@ -83,9 +88,17 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default="data/benchmark_sample.csv")
     ap.add_argument("--n", type=int, default=300)
+    ap.add_argument("--synthetic", action="store_true", help="use random rows instead of the CSV")
     args = ap.parse_args()
 
-    rows = load_rows(args.data, args.n)
+    synthetic = args.synthetic or not Path(args.data).exists()
+    if synthetic:
+        why = "--synthetic" if args.synthetic else f"{args.data} not found"
+        print(f"NOTE: using {args.n} synthetic rows ({why}). Latency is valid; the routing mix and accuracy are not representative.")
+        rows = synthetic_rows(args.n)
+    else:
+        rows = load_rows(args.data, args.n)
+    out_path = "results/benchmark_synthetic.csv" if synthetic else "results/benchmark.csv"
     probe = rows[0][0]
     procs = [
         subprocess.Popen(
@@ -109,12 +122,12 @@ def main():
             p.terminate()
 
     Path("results").mkdir(exist_ok=True)
-    with open("results/benchmark.csv", "w", newline="") as f:
+    with open(out_path, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(results[0].keys()))
         w.writeheader()
         w.writerows(results)
     summarize(results)
-    print("\nsaved results/benchmark.csv")
+    print(f"\nsaved {out_path}")
 
 
 if __name__ == "__main__":
