@@ -70,6 +70,8 @@ The edge model has 100 trees (depth 4) and the cloud model has 600 trees (depth 
 | Edge inference (ONNX, FastAPI) | Done |
 | Router with timeout fallback | Done |
 | Benchmark harness and charts | Done |
+| Larger cloud model and accuracy comparison | Done |
+| CI (GitHub Actions) and Docker Compose | Done |
 | Model versioning on Kaggle | Done: model downloads from Kaggle via `MODEL_HANDLE`; a committed copy is the fallback |
 | Drift detection and retraining loop | Planned |
 | Multiple edge nodes and agent layer | Planned |
