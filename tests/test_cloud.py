@@ -40,3 +40,27 @@ def test_outage_switch_makes_cloud_only_return_503():
     assert r.json()["cloud_down"] is True
     r = router_client.post("/predict", params={"mode": "cloud_only"}, json=BODY)
     assert r.status_code == 503
+
+
+def test_jitter_adds_to_the_base_delay(monkeypatch):
+    monkeypatch.setattr(cloud, "DELAY_MS", 20.0)
+    monkeypatch.setattr(cloud, "JITTER_MS", 30.0)
+    r = cloud_client.post("/cloud/predict", json=BODY)
+    assert r.json()["latency_ms"] >= 15.0
+
+
+def test_drop_makes_the_request_hang(monkeypatch):
+    monkeypatch.setattr(cloud, "DELAY_MS", 0.0)
+    monkeypatch.setattr(cloud, "DROP_PCT", 100.0)
+    monkeypatch.setattr(cloud, "HANG_S", 0.2)
+    r = cloud_client.post("/cloud/predict", json=BODY)
+    assert r.json()["latency_ms"] >= 190.0
+
+
+def test_chaos_endpoint_updates_settings(monkeypatch):
+    monkeypatch.setattr(cloud, "JITTER_MS", 0.0)
+    monkeypatch.setattr(cloud, "DROP_PCT", 0.0)
+    r = cloud_client.post("/admin/chaos", params={"jitter_ms": 40, "drop_pct": 5})
+    assert r.json() == {"jitter_ms": 40.0, "drop_pct": 5.0}
+    assert cloud.JITTER_MS == 40.0
+    assert cloud.DROP_PCT == 5.0
