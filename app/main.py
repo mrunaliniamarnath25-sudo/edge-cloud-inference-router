@@ -12,8 +12,17 @@ CLOUD_URL = os.getenv("CLOUD_URL", "http://127.0.0.1:8001/cloud/predict")
 CLOUD_TIMEOUT_S = float(os.getenv("CLOUD_TIMEOUT_S", "1.0"))
 LOW = float(os.getenv("ROUTE_LOW", "0.1"))
 HIGH = float(os.getenv("ROUTE_HIGH", "0.9"))
+NODE_ID = os.getenv("NODE_ID", "edge-1")
 
 app = FastAPI(title="Edge-Cloud Inference Router")
+
+
+@app.middleware("http")
+async def add_node_header(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Node-Id"] = NODE_ID
+    return response
+
 client = httpx.AsyncClient(timeout=CLOUD_TIMEOUT_S)
 state = {"cloud_down": False}
 score([0.0] * 30)  # load and warm the edge model at startup
