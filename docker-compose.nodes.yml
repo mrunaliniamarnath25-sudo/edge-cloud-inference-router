@@ -10,6 +10,8 @@ services:
     environment:
       CLOUD_URL: http://cloud:8001/cloud/predict
       NODE_ID: edge-1
+    ports:
+      - "8010:8000"
     depends_on: [cloud]
   edge2:
     build: .
