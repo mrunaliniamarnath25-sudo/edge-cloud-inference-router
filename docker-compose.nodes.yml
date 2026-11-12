@@ -1,0 +1,35 @@
+services:
+  cloud:
+    build: .
+    command: uvicorn app.cloud:app --host 0.0.0.0 --port 8001
+    environment:
+      CLOUD_DELAY_MS: "500"
+  edge1:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    environment:
+      CLOUD_URL: http://cloud:8001/cloud/predict
+      NODE_ID: edge-1
+    depends_on: [cloud]
+  edge2:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    environment:
+      CLOUD_URL: http://cloud:8001/cloud/predict
+      NODE_ID: edge-2
+    depends_on: [cloud]
+  edge3:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    environment:
+      CLOUD_URL: http://cloud:8001/cloud/predict
+      NODE_ID: edge-3
+    depends_on: [cloud]
+  gateway:
+    build: .
+    command: uvicorn app.gateway:app --host 0.0.0.0 --port 8000
+    environment:
+      NODES: http://edge1:8000,http://edge2:8000,http://edge3:8000
+    ports:
+      - "8000:8000"
+    depends_on: [edge1, edge2, edge3]
