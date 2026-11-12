@@ -54,6 +54,27 @@ The edge model has 100 trees (depth 4) and the cloud model has 600 trees (depth 
 - Precision is not reported: the sample has all 98 fraud cases but only 1,900 of 56,864 normal rows, so false positives are undercounted.
 - The sample is about 5% fraud versus 0.17% in the full data, so the share sent to the cloud likely overstates real traffic.
 
+## Multiple nodes behind a gateway (Docker)
+
+`docker-compose.nodes.yml` runs three router nodes, the simulated cloud, and a gateway that round-robins across live nodes, retries on another node when one fails, and skips a failed node for 5 seconds. 300 requests per scenario, hybrid mode, everything in Docker on one machine:
+
+| Scenario | p50 (ms) | p95 (ms) | p99 (ms) | Answered | Requests per node |
+|---|---|---|---|---|---|
+| One node, no gateway | 1.14 | 2.21 | 16.67 | 100% | 300 |
+| Three nodes via the gateway | 2.66 | 3.74 | 13.88 | 100% | 100 / 100 / 100 |
+| Gateway, edge-2 stopped mid-run | 2.46 | 3.87 | 11.53 | 100% | 112 / 74 / 114 |
+
+```bash
+docker compose -f docker-compose.nodes.yml up -d --build
+uv run python -m bench.nodes_benchmark --n 300
+docker compose -f docker-compose.nodes.yml down
+```
+
+- These latencies include Docker's network layer, so they are not comparable to the native-process results above. Over two runs the gateway added about 1 to 1.5 ms at p50.
+- With 300 requests, p99 depends on a handful of requests and is noisy.
+- The run lasts under a second, so edge-2 still answered 24 requests while it was shutting down, and only about 75 requests ran with it fully down. One request was retried on another node, and load stayed balanced across the survivors. The 5-second cooldown was not exercised.
+- The nodes are simulated (containers on one machine), and the gateway is itself a single point of failure.
+
 ## Method and limitations
 
 - **Hardware:** Apple Silicon MacBook Air, everything on one machine over localhost. Latency is measured by the client and includes the HTTP round trip to the router. Apple M5 chip.
@@ -74,7 +95,8 @@ The edge model has 100 trees (depth 4) and the cloud model has 600 trees (depth 
 | CI (GitHub Actions) and Docker Compose | Done |
 | Model versioning on Kaggle | Done: model downloads from Kaggle via `MODEL_HANDLE`; a committed copy is the fallback |
 | Drift detection and retraining loop | Planned |
-| Multiple edge nodes and agent layer | Planned |
+| Multiple simulated edge nodes with gateway and failover | Done |
+| Agent layer | Planned |
 | DePIN adapter | Planned |
 
 ## Run it
