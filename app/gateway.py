@@ -20,12 +20,12 @@ _counter = itertools.count()
 
 
 def candidates():
-    """Nodes in round-robin order, skipping ones cooling down after a failure."""
-    start = next(_counter) % len(NODES)
-    order = NODES[start:] + NODES[:start]
+    """Live nodes in round-robin order; if every node is cooling down, try them all."""
     now = time.monotonic()
-    live = [n for n in order if down_until[n] <= now]
-    return live or order  # if every node is cooling down, try them all anyway
+    live = [n for n in NODES if down_until[n] <= now]
+    pool = live or list(NODES)
+    start = next(_counter) % len(pool)
+    return pool[start:] + pool[:start]
 
 
 def is_node_failure(status_code: int) -> bool:

@@ -1,4 +1,5 @@
 import itertools
+import time
 
 import httpx
 import pytest
@@ -77,3 +78,11 @@ def test_all_nodes_down_returns_503(gw, monkeypatch):
     r = gw.post("/predict", json=BODY)
     assert r.status_code == 503
     assert r.headers["x-gateway-attempts"] == "3"
+
+
+def test_load_stays_balanced_when_a_node_is_down(gw, monkeypatch):
+    monkeypatch.setattr(gateway, "client", FakeClient(ok))
+    gateway.down_until["http://n1"] = time.monotonic() + 60
+    seen = [gw.post("/predict", json=BODY).headers["x-node-id"] for _ in range(10)]
+    assert seen.count("n2") == 5
+    assert seen.count("n3") == 5
