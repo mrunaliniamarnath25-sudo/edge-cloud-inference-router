@@ -75,11 +75,35 @@ docker compose -f docker-compose.nodes.yml down
 - The run lasts under a second, so edge-2 still answered 24 requests while it was shutting down, and only about 75 requests ran with it fully down. One request was retried on another node, and load stayed balanced across the survivors. The 5-second cooldown was not exercised.
 - The nodes are simulated (containers on one machine), and the gateway is itself a single point of failure.
 
+## Unstable cloud (jitter and hangs)
+
+`CLOUD_JITTER_MS` adds a random extra delay (exponential, mean 150 ms here) and `CLOUD_DROP_PCT` makes a share of requests hang (5% here, for 5 s, past the router's 1 s timeout). 200 requests per scenario, native processes:
+
+| Scenario | Answered | Fell back to edge | p50 (ms) | p95 (ms) | p99 (ms) | Served at edge |
+|---|---|---|---|---|---|---|
+| Cloud only, stable | 100% | n/a | 508.78 | 510.69 | 511.84 | 0% |
+| Cloud only, unstable | 91.0% | n/a | 598.13 | 832.48 | 933.08 | 0% |
+| Hybrid, normal band | 100% | 0% | 0.84 | 1.24 | 1.70 | 100% |
+| Hybrid, normal band, unstable | 100% | 0% | 0.75 | 0.97 | 1.19 | 100% |
+| Hybrid, stress band | 100% | 0% | 2.31 | 521.50 | 525.45 | 74.5% |
+| Hybrid, stress band, unstable | 100% | 3.5% | 2.09 | 848.16 | 1006.57 | 78.0% |
+
+```bash
+uv run python bench/run_benchmark.py --chaos --n 200
+```
+
+- Latency columns cover answered requests only, so the 18 failed requests in the unstable cloud-only row are not in them.
+- No request in this 200-row sample fell in the normal 0.1 to 0.9 band, so the normal-band rows never touched the cloud. The stress band (edge score from 2.6e-5 to 0.9, about a quarter of rows) forces cloud calls. It is a stress test, not normal traffic.
+- Under the same cloud faults, cloud-only answered 91%. The stress-band router answered all 200: 7 of its 51 cloud calls timed out and it returned the edge answer instead. "Served at edge" in the last row includes those 7.
+- The fallback guarantees an answer, not a fast or equally accurate one. Those requests waited about 1 s (the p99), and the edge answer for an uncertain score is the less reliable one. Accuracy of fallback answers was not measured.
+- Lowering `CLOUD_TIMEOUT_S` would shorten that tail at the cost of more fallbacks; this was not tested.
+- The faults are simulated by delays inside the cloud service, on one machine.
+
 ## Method and limitations
 
 - **Hardware:** Apple Silicon MacBook Air, everything on one machine over localhost. Latency is measured by the client and includes the HTTP round trip to the router. Apple M5 chip.
 - **Simulated cloud:** the cloud endpoint runs a larger XGBoost model (600 trees, depth 8) plus a fixed 500 ms delay. The delay is simulated, so the latency speedup reflects that setting, not a real network. The larger model's own inference time is about 0.04 ms.
-- **Outage test:** the outage flag fails instantly. A real network blackhole would make uncertain requests wait for the timeout before falling back.
+- **Outage test:** the outage flag fails instantly. The unstable-cloud scenarios above add hangs that run into the router's 1 s timeout, but a real network blackhole is still not tested.
 - **Data:** the benchmark sample has 1,998 rows from the held-out test split of the [ULB credit card fraud dataset](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud), including all 98 test fraud cases (about 5% fraud, versus 0.17% in the full data). The data file is not committed.
 - **Model:** XGBoost (100 trees, depth 4), exported to ONNX. On the test split, fraud precision was 0.818 and recall 0.827.
 - Numbers vary slightly between runs.
@@ -91,6 +115,7 @@ docker compose -f docker-compose.nodes.yml down
 | Edge inference (ONNX, FastAPI) | Done |
 | Router with timeout fallback | Done |
 | Benchmark harness and charts | Done |
+| Benchmark under an unstable cloud (jitter, hangs) | Done |
 | Larger cloud model and accuracy comparison | Done |
 | CI (GitHub Actions) and Docker Compose | Done |
 | Model versioning on Kaggle | Done: model downloads from Kaggle via `MODEL_HANDLE`; a committed copy is the fallback |
